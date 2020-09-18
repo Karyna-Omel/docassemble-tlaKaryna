@@ -1,7 +1,70 @@
+objects:
+  - user: Individual 
+  - cohabs: DAList.using(object_type=Individual)
+---
 mandatory: true
 question: |
   Hello, ${ name }.
+  
+  You live with ${ cohabs }.
+  
+  The person you live is a female, correct? ${ user.lives_with_female }.
+  
+  Do you live with your father? ${ user.lives_with_father }.
+  
+  Do you live with your mother? ${ user.lives_with_mother }.
+  
+  Do you live with your sister? ${ user.lives_with_sister }.
+  
+  Do you live with a friend? ${ user.lives_with_friend }. 
+  
+  What is your monthly rent payment? ${ target_variable }.
+  
+  Your signature: ${ user.signature }
 ---
 question: What is your name?
 fields:
   - Name: name 
+---
+question: Do you live with anyone?
+yesno: cohabs.there_are_any
+---
+generic object: Individual
+question: | 
+  What is the name of the person you live with?
+fields:
+  - First Name: cohabs[0].name.first
+  - Last Name: cohabs[0].name.last
+---
+question: Do you live anyone else?
+yesno: cohabs.there_is_another
+---
+question: Is the person you live with female?
+yesno: user.lives_with_female
+---
+question: |
+  What is your relationship to that person?
+fields:
+  - note: Select as many as apply
+  - Father: user.lives_with_father
+    datatype: yesnowide
+  - Mother: user.lives_with_mother
+    datatype: yesnowide
+  - Sister: user.lives_with_sister
+    datatype: yesnowide
+  - Friend: user.lives_with_friend
+    datatype: yesnowide
+---
+question: |
+  What is your monthly rent payment?
+field: target_variable
+dropdown: 
+  - $400-$600
+  - $700-$900
+  - above $1000
+  - other
+---
+question: Please sign
+signature: user.signature
+  
+  
