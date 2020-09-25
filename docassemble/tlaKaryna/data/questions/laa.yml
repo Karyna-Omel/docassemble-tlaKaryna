@@ -4,11 +4,13 @@ objects:
 ---
 mandatory: true
 question: |
-  Hello, ${ name }.
+  Hello, ${ user }.
+
+subquestion: |
   
   You live with ${ cohabs }.
   
-  The person you live is a female, correct? ${ user.lives_with_female }.
+  Do you like the people you live with? ${"Yes" if user.lives_and_likes else "No"}.
   
   Do you live with your father? ${ user.lives_with_father }.
   
@@ -22,28 +24,24 @@ question: |
   
   Your signature: ${ user.signature }
 ---
-question: What is your name?
-fields:
-  - Name: name 
----
 question: Do you live with anyone?
 yesno: cohabs.there_are_any
 ---
 generic object: Individual
 question: | 
-  What is the name of the person you live with?
+  What is ${ x.object_possessive('name') }?
 fields:
-  - First Name: cohabs[0].name.first
-  - Last Name: cohabs[0].name.last
+  - First Name: x.name.first
+  - Last Name: x.name.last
 ---
 question: Do you live anyone else?
 yesno: cohabs.there_is_another
 ---
-question: Is the person you live with female?
-yesno: user.lives_with_female
+question: Do you like the people you live with?
+yesno: user.lives_and_likes
 ---
 question: |
-  What is your relationship to that person?
+  What is your relationship to your roommate(s)?
 fields:
   - note: Select as many as apply
   - Father: user.lives_with_father
