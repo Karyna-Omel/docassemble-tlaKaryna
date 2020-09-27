@@ -1,16 +1,24 @@
+sections: 
+  - About: About your living situation
+  - Family: About your family
+---
+features:
+  navigation: True
+---
 objects:
   - user: Individual 
   - cohabs: DAList.using(object_type=Individual)
+  - family: DAList
 ---
 mandatory: true
 question: |
   Hello, ${ user }.
-
+  
 subquestion: |
   
   You live with ${ cohabs }.
   
-  Do you like the people you live with? ${"Yes" if user.lives_and_likes else "No"}.
+  Do you like the people you live with? ${"Yes" if user.lives_with_underage else "No"}.
   
   Do you live with your father? ${ user.lives_with_father }.
   
@@ -23,9 +31,50 @@ subquestion: |
   What is your monthly rent payment? ${ target_variable }.
   
   Your signature: ${ user.signature }
+
+  Do you qualify for legal aid? You responded: ${"Yes" if user.qualifies else "No"}.
+
+  Here is your document.
+attachments:
+  - name: Qualification for Legal Aid
+    filename: qualification_for_LA
+    valid formats:
+      - docx
+      - pdf
+    content: |
+      
+      Dear ${ user },
+      
+      You live with ${ family }.
+      
+      %if user.qualifies:
+       Welcome to Aberta Legal Aid! We are pleased to tell you that you qualify          for our legal services. Please call us at 866-845-3425 to book an                appointment. Please make sure to have a copy of your banking statements          for the last three months. 
+       
+       Your upcoming court date is on :${ format_date(court_date, format='EEEE, MMMM d, yyyy') }.
+       
+       Talk to you soon!
+       
+       % else:
+       Unfortunately, you do not qualify for our legal services. Please go to the        Edmonton Community Legal Centre (ECLC) website to fill out their Intake          Form. 
+       Here is a 
+       [link to the web site](https://www.eclc.ca/client-intake-form/).
+       Please ensure you attach your Qualification for Legal Aid letter to the          intake form. 
+       
+       Your upcoming court date is on: ${ format_date(court_date, format='EEEE, MMMM d, yyyy') }.
+       
+       Have a great day!
+       
+       %endif
+       
+                                     
+       This document was created on ${ format_date(today()) }.
+       
+       ![LAA logo](https://www.ihearthomeyyc.com/wp-content/uploads/2018/07/Legal-Aid-Alberta-Logo-Canva-300x300.png)
+
 ---
 question: Do you live with anyone?
 yesno: cohabs.there_are_any
+section: About
 ---
 generic object: Individual
 question: | 
@@ -33,12 +82,15 @@ question: |
 fields:
   - First Name: x.name.first
   - Last Name: x.name.last
+section: About
 ---
 question: Do you live anyone else?
 yesno: cohabs.there_is_another
+section: About
 ---
-question: Do you like the people you live with?
-yesno: user.lives_and_likes
+question: Are the people you live with above 18 years old?
+yesno: user.lives_with_underage
+section: About
 ---
 question: |
   What is your relationship to your roommate(s)?
@@ -52,6 +104,7 @@ fields:
     datatype: yesnowide
   - Friend: user.lives_with_friend
     datatype: yesnowide
+section: About
 ---
 question: |
   What is your monthly rent payment?
@@ -61,8 +114,30 @@ dropdown:
   - $700-$900
   - above $1000
   - other
+section: About
 ---
 question: Please sign
 signature: user.signature
-  
-  
+section: About
+---
+question: Do you qualify for legal aid?
+yesno: user.qualifies
+section: Family
+---
+question: Do you have any family members?
+yesno: family.there_are_any
+section: Family
+---
+question: Do you have another family member(s)?
+yesno: family.there_is_another
+section: Family
+---
+question: What are the names of the family member(s)?
+fields: 
+  - First Name: family[i]
+section: Family
+---
+question: When is your upcoming court date?
+fields: 
+  - Court date: court_date
+    datatype: date
