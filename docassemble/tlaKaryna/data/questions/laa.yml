@@ -1,40 +1,36 @@
 sections: 
-  - About: About your living situation
-  - Family: About your family
+  - Eligibility for LAA: Eligibility for LAA
 ---
 features:
   navigation: True
 ---
 objects:
   - user: Individual 
-  - cohabs: DAList.using(object_type=Individual)
   - family: DAList
 ---
 mandatory: true
+code: |
+  # Code-flow block
+ 
+  user.name.first
+  
+  if user.received_LAA_assistance:
+    user.has_lawyer
+  else:
+   user.lives_in_Alberta
+   user.legal_matter_in_Alberta
+   user.has_family_matter
+   user.has_criminal_matter
+   
+  if user.has_lawyer:
+   user.has_acting_lawyer
+  
+  user.can_afford_lawyer
+  
+---
+mandatory: true
 question: |
-  Hello, ${ user }.
-  
-subquestion: |
-  
-  You live with ${ cohabs }.
-  
-  Do you like the people you live with? ${"Yes" if user.lives_with_underage else "No"}.
-  
-  Do you live with your father? ${ user.lives_with_father }.
-  
-  Do you live with your mother? ${ user.lives_with_mother }.
-  
-  Do you live with your sister? ${ user.lives_with_sister }.
-  
-  Do you live with a friend? ${ user.lives_with_friend }. 
-  
-  What is your monthly rent payment? ${ target_variable }.
-  
-  Your signature: ${ user.signature }
 
-  Do you qualify for legal aid? You responded: ${"Yes" if user.qualifies else "No"}.
-
-  Here is your document.
 attachments:
   - name: Qualification for Legal Aid
     filename: qualification_for_LA
@@ -45,36 +41,106 @@ attachments:
       
       Dear ${ user },
       
-      You live with ${ family }.
-      
+       
       %if user.qualifies:
        Welcome to Aberta Legal Aid! We are pleased to tell you that you qualify          for our legal services. Please call us at 866-845-3425 to book an                appointment. Please make sure to have a copy of your banking statements          for the last three months. 
        
-       Your upcoming court date is on :${ format_date(court_date, format='EEEE, MMMM d, yyyy') }.
+       The information you provided to us will be used by your lawyer to assess your legal issue. Please review the summary below. If you need to correct it please email us LSC@legalaid.ab.ca.
+       
+       The sammary of your personal information:
+       
+      
+                 %if family:
+                  - You live with ${ family }.
+                 %endif
+       
+                  %if user.received_LAA_assistance:
+                   - Your legal matter is an appeal of a matter for which you recieved LAA assistance.
+                  %else:
+                    - Your legal matter is NOT an appeal of a matter for which you recieved LAA assistance.
+                  %endif
+                  
+                  %if not user.received_LAA_assistance:
+                  - It is ${ user.lives_in_Alberta } that you live in Alberta.
+                  - It is ${ user.legal_matter_in_Alberta } that your legal matter is in Alberta. 
+                  - It is ${ user.has_family_matter } that you have a family matter.
+                  - It is ${ user.has_criminal_matter } that you have a criminal matter. 
+                  %endif
+                  
+                  %if user.has_lawyer:
+                   - You have a lawyer. It is ${ user.has_acting_lawyer } that the lawyer is your representative.
+                  %else:
+                   - You do NOT have a lawyer.
+                    %endif
+                 
+                  %if user.can_afford_lawyer:
+                   - You are able to afford a lawyer.
+                  %else:
+                   - You are NOT able to afford a lawyer.
+                  %endif   
+                  
+                   - Your upcoming court date is on ${ format_date(court_date, format='EEEE, MMMM d, yyyy') }.
+       
+       ${ user }: I hereby declare, that all of the information I have provided is complete and correct: ${ user.signature }
        
        Talk to you soon!
        
        % else:
        Unfortunately, you do not qualify for our legal services. Please go to the        Edmonton Community Legal Centre (ECLC) website to fill out their Intake          Form. 
-       Here is a 
-       [link to the web site](https://www.eclc.ca/client-intake-form/).
+       By clicking on "website" you able to access the 
+       [link to the website](https://www.eclc.ca/client-intake-form/).
        Please ensure you attach your Qualification for Legal Aid letter to the          intake form. 
        
-       Your upcoming court date is on: ${ format_date(court_date, format='EEEE, MMMM d, yyyy') }.
+       The information you provided to us will be used by the ECLC to assess your eligibility. Please review the summary below. If you need to correct it please email us LSC@legalaid.ab.ca.
+       
+       The sammary of your personal information:
+       
+                 %if family:
+                  - You live with ${ family }.
+                 %endif
+       
+                  %if user.received_LAA_assistance:
+                   - Your legal matter is an appeal of a matter for which you recieved LAA assistance.
+                  %else:
+                    - Your legal matter is NOT an appeal of a matter for which you recieved LAA assistance.
+                  %endif
+                  
+                  %if not user.received_LAA_assistance:
+                  - It is ${ user.lives_in_Alberta } that you live in Alberta.
+                  - It is ${ user.legal_matter_in_Alberta } that your legal matter is in Alberta. 
+                  - It is ${ user.has_family_matter } that you have a family matter.
+                  - It is ${ user.has_criminal_matter } that you have a criminal matter. 
+                  %endif
+                  
+                  %if user.has_lawyer:
+                   - You have a lawyer. It is ${ user.has_acting_lawyer } that the lawyer is your representative.
+                  %else:
+                   - You do NOT have a lawyer.
+                    %endif
+                 
+                 %if user.can_afford_lawyer:
+                   - You are able to afford a lawyer.
+                  %else:
+                   - You are NOT able to afford a lawyer.
+                  %endif                    
+                  
+                   - Your upcoming court date is on ${ format_date(court_date, format='EEEE, MMMM d, yyyy') }.
+       
+       I hereby declare, that all of the information I have provided is complete and correct: ${ user.signature }
        
        Have a great day!
        
        %endif
        
-                                     
+                        
        This document was created on ${ format_date(today()) }.
        
        ![LAA logo](https://www.ihearthomeyyc.com/wp-content/uploads/2018/07/Legal-Aid-Alberta-Logo-Canva-300x300.png)
+       
+  
+       
+       
 
----
-question: Do you live with anyone?
-yesno: cohabs.there_are_any
-section: About
 ---
 generic object: Individual
 question: | 
@@ -82,62 +148,92 @@ question: |
 fields:
   - First Name: x.name.first
   - Last Name: x.name.last
-section: About
+section: Eligibility for LAA
 ---
-question: Do you live anyone else?
-yesno: cohabs.there_is_another
-section: About
----
-question: Are the people you live with above 18 years old?
-yesno: user.lives_with_underage
-section: About
----
-question: |
-  What is your relationship to your roommate(s)?
-fields:
-  - note: Select as many as apply
-  - Father: user.lives_with_father
-    datatype: yesnowide
-  - Mother: user.lives_with_mother
-    datatype: yesnowide
-  - Sister: user.lives_with_sister
-    datatype: yesnowide
-  - Friend: user.lives_with_friend
-    datatype: yesnowide
-section: About
----
-question: |
-  What is your monthly rent payment?
-field: target_variable
-dropdown: 
-  - $400-$600
-  - $700-$900
-  - above $1000
-  - other
-section: About
----
-question: Please sign
+question: I hereby declare, that all of the information I have provided is complete and correct.
+subquestion: |
+  Please sign:
 signature: user.signature
-section: About
----
-question: Do you qualify for legal aid?
-yesno: user.qualifies
-section: Family
+section: Eligibility for LAA
 ---
 question: Do you have any family members?
 yesno: family.there_are_any
-section: Family
+section: Eligibility for LAA
 ---
 question: Do you have another family member(s)?
 yesno: family.there_is_another
-section: Family
+section: Eligibility for LAA
 ---
 question: What are the names of the family member(s)?
 fields: 
   - First Name: family[i]
-section: Family
+section: Eligibility for LAA
 ---
 question: When is your upcoming court date?
 fields: 
   - Court date: court_date
     datatype: date
+---
+ # new information
+question: Does the user have a lawyer?
+yesno: user.has_lawyer
+section: Eligibility for LAA
+---
+question: Can the user afford a lawyer?
+yesno: user.can_afford_lawyer
+section: Eligibility for LAA
+---
+question: If the user has a lawyer, is that lawyer still acting for the user?
+yesno: user.has_acting_lawyer
+section: Eligibility for LAA
+---
+code: | # unrepresented definition
+  if not (user.has_lawyer and user.has_acting_lawyer) and not user.can_afford_lawyer:
+    user.unrepresented = True
+  else:
+    user.unrepresented = False
+---
+question: Is the user's legal matter located in Alberta?
+yesno: user.legal_matter_in_Alberta
+section: Eligibility for LAA
+---
+question: Is user's legal matter a family law matter?
+yesno: user.has_family_matter
+section: Eligibility for LAA
+---
+question: Is the user's legal matter a criminal law matter?
+yesno: user.has_criminal_matter
+section: Eligibility for LAA
+---
+code: | # the matter must be family and/or criminal
+  if user.has_family_matter or user.has_criminal_matter:
+    appropriate_legal_matter = True
+  else:
+    appropriate_legal_matter = False
+---
+question: Does the user live in Alberta?
+yesno: user.lives_in_Alberta
+section: Eligibility for LAA
+---
+code: | # residency requirments
+  if user.lives_in_Alberta and user.legal_matter_in_Alberta:
+    meets_residency_requirements = True
+  else:
+    meets_residency_requirements = False
+---
+question: Is the user's matter on appeal of a matter for which the user received LAA assistance?
+yesno: user.received_LAA_assistance
+section: Eligibility for LAA
+---
+code: | # LAA exception
+  if user.received_LAA_assistance and user.unrepresented:
+    LAA_exception = True
+  else:
+    LAA_exception = False
+---
+code: | #Is the user eligible to receive legal aid services?
+  if LAA_exception or (user.unrepresented and meets_residency_requirements and appropriate_legal_matter):
+    user.qualifies = True
+  else:
+    user.qualifies = False
+---
