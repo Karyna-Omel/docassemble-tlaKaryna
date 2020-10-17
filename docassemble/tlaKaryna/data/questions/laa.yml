@@ -6,13 +6,28 @@ features:
 ---
 objects:
   - user: Individual 
-  - family: DAList
+  - user.has_assets: Value
+  - user.mincome: Value
+  - user.yrincome: Value
+  - family: DAList.using(object_type=Individual, complete_attribute="complete")
+  - family[i].has_assets: Value
+  - family[i].mincome: Value
+  - family[i].yrincome: Value
+---
+code: |
+  family[i].mincome.exists
+  family[i].complete = True
 ---
 mandatory: true
 code: |
   # Code-flow block
  
   user.name.first
+  
+  user.mincome.exists
+  
+  if len(family) > 0:
+    family
   
   if user.received_LAA_assistance:
     user.has_lawyer
@@ -39,20 +54,47 @@ attachments:
       - pdf
     content: |
       
+
       Dear ${ user },
       
+      The sammary of your personal information:
        
-      %if user.qualifies:
-       Welcome to Aberta Legal Aid! We are pleased to tell you that you qualify          for our legal services. Please call us at 866-845-3425 to book an                appointment. Please make sure to have a copy of your banking statements          for the last three months. 
-       
-       The information you provided to us will be used by your lawyer to assess your legal issue. Please review the summary below. If you need to correct it please email us LSC@legalaid.ab.ca.
-       
-       The sammary of your personal information:
-       
-      
-                 %if family:
-                  - You live with ${ family }.
+                 %if user.has_assets.exists:            
+                 -The value of your assets is ${ currency(user.has_assets.value) }.
                  %endif
+
+                 -Your income in the last 30 days is ${ currency(user.mincome) }.
+                 -Your income in the last year is ${ currency(user.yrincome) }.
+                 
+                 
+                 %if family: 
+                 * You live with ${ family }.
+                 %endif
+         
+                 %if len(family) > 0:
+                 %for f in family:
+                 The value of ${ f }'s assests is ${ currency(f.has_assets.value) }.
+                 
+                 ${ f}'s income in the last 30 days is ${ currency(f.mincome) }.
+                 ${ f }'s income in the last year is ${ currency(f.yrincome) }.
+                 %endfor
+                 %else:
+                 You don't have any family members.
+                 %endif
+                 
+                  The total income in the last 30 days for all members in the household is ${ currency(total_mincome) }.
+
+                 The total income in the last year for all members in the household is ${ currency(total_yrincome) }.
+                
+                
+
+                %if user.financially_eligible:
+                Your income meets our financial eligibily requirements.
+                %elif user.marginally_financially_eligible:
+                Your income marginally meets our financial eligibily requirements.
+                %else:
+                Sorry, you are finacially ineligible for our services.
+                %endif
        
                   %if user.received_LAA_assistance:
                    - Your legal matter is an appeal of a matter for which you recieved LAA assistance.
@@ -82,6 +124,14 @@ attachments:
                    - Your upcoming court date is on ${ format_date(court_date, format='EEEE, MMMM d, yyyy') }.
        
        ${ user }: I hereby declare, that all of the information I have provided is complete and correct: ${ user.signature }
+        
+      %if user.qualifies:
+       Welcome to Aberta Legal Aid! We are pleased to tell you that you qualify          for our legal services. 
+       
+       Please call us at 866-845-3425 to book an appointment. Please make sure to have a copy of your banking statements for the last three months. 
+       
+       The information you provided to us will be used by your lawyer to assess your legal issue. Please review the summary below. If you need to correct it please email us LSC@legalaid.ab.ca.
+       
        
        Talk to you soon!
        
@@ -93,40 +143,6 @@ attachments:
        
        The information you provided to us will be used by the ECLC to assess your eligibility. Please review the summary below. If you need to correct it please email us LSC@legalaid.ab.ca.
        
-       The sammary of your personal information:
-       
-                 %if family:
-                  - You live with ${ family }.
-                 %endif
-       
-                  %if user.received_LAA_assistance:
-                   - Your legal matter is an appeal of a matter for which you recieved LAA assistance.
-                  %else:
-                    - Your legal matter is NOT an appeal of a matter for which you recieved LAA assistance.
-                  %endif
-                  
-                  %if not user.received_LAA_assistance:
-                  - It is ${ user.lives_in_Alberta } that you live in Alberta.
-                  - It is ${ user.legal_matter_in_Alberta } that your legal matter is in Alberta. 
-                  - It is ${ user.has_family_matter } that you have a family matter.
-                  - It is ${ user.has_criminal_matter } that you have a criminal matter. 
-                  %endif
-                  
-                  %if user.has_lawyer:
-                   - You have a lawyer. It is ${ user.has_acting_lawyer } that the lawyer is your representative.
-                  %else:
-                   - You do NOT have a lawyer.
-                    %endif
-                 
-                 %if user.can_afford_lawyer:
-                   - You are able to afford a lawyer.
-                  %else:
-                   - You are NOT able to afford a lawyer.
-                  %endif                    
-                  
-                   - Your upcoming court date is on ${ format_date(court_date, format='EEEE, MMMM d, yyyy') }.
-       
-       I hereby declare, that all of the information I have provided is complete and correct: ${ user.signature }
        
        Have a great day!
        
@@ -138,9 +154,6 @@ attachments:
        ![LAA logo](https://www.ihearthomeyyc.com/wp-content/uploads/2018/07/Legal-Aid-Alberta-Logo-Canva-300x300.png)
        
   
-       
-       
-
 ---
 generic object: Individual
 question: | 
@@ -157,16 +170,15 @@ signature: user.signature
 section: Eligibility for LAA
 ---
 question: Do you have any family members?
+subquestion: |
+  IMPORTANT: Family members are defined as any and each person that you are currently living with.
 yesno: family.there_are_any
 section: Eligibility for LAA
 ---
 question: Do you have another family member(s)?
+subquestion: |
+  IMPORTANT: Family members are defined as any and each person that you are currently living with.
 yesno: family.there_is_another
-section: Eligibility for LAA
----
-question: What are the names of the family member(s)?
-fields: 
-  - First Name: family[i]
 section: Eligibility for LAA
 ---
 question: When is your upcoming court date?
@@ -232,8 +244,138 @@ code: | # LAA exception
     LAA_exception = False
 ---
 code: | #Is the user eligible to receive legal aid services?
-  if LAA_exception or (user.unrepresented and meets_residency_requirements and appropriate_legal_matter):
+  if (LAA_exception and (user.marginally_financially_eligible or user.financially_eligible)) or (user.unrepresented and meets_residency_requirements and appropriate_legal_matter and (user.marginally_financially_eligible or user.financially_eligible)):
     user.qualifies = True
   else:
     user.qualifies = False
+---
+# new iformation TLA 5
+question: |
+   ${ user }, please provide important financial eligibility information below (tick a box if applicable). 
+fields:
+  - Do you have any assets?: user.has_assets.exists
+    datatype: yesnowide
+  - What is the value of your assets?: user.has_assets.value
+    datatype: currency
+    show if: user.has_assets.exists
+    
+  - Do you know your income earned in the last 30 days?: user.mincome.exists
+    datatype: yesnowide
+  - What is your income in the last 30 days?: user.mincome.value
+    datatype: currency
+    show if: user.mincome.exists
+    
+  - Do you know your income earned in the last year?: user.yrincome.exists
+    datatype: yesnowide
+  - What is your income in the last year?: user.yrincome.value
+    datatype: currency
+    show if: user.yrincome.exists 
+---
+question: |
+  ${ user }, please provide important financial eligibility information about ${ family[i] } below (tick a box if applicable). 
+fields:
+  - Does he/she have any assets?: family[i].has_assets.exists
+    datatype: yesnowide
+  - What is the value of his/hers assets?: family[i].has_assets.value
+    datatype: currency
+    show if: family[i].has_assets.exists
+    
+  - Do you know his/her income earned in the last 30 days?: family[i].mincome.exists
+    datatype: yesnowide
+  - What is his/her income in the last 30 days?: family[i].mincome.value
+    datatype: currency
+    show if: family[i].mincome.exists
+    
+  - Do you know his/her income earned in the last year?: family[i].yrincome.exists
+    datatype: yesnowide
+  - What is his/her income in the last year?: family[i].yrincome.value
+    datatype: currency
+    show if: family[i].yrincome.exists
+---
+# Financially eligible
+reconsider: True
+code: |
+  if eligible_mincome and eligible_yrincome:
+    user.financially_eligible = True
+  else:
+    user.financially_eligible = False
+---
+# Marginally Financially eligible
+reconsider: True
+code: |
+  if (marginal_mincome and eligible_yrincome) or (marginal_yrincome and eligible_mincome) or (marginal_mincome and marginal_yrincome):
+    user.marginally_financially_eligible = True
+  else:
+    user.marginally_financially_eligible = False
+---
+# Monthly Income
+reconsider: True
+code: |
+  if total_mincome <= monthly_income_cap:
+    eligible_mincome = True
+    marginal_mincome = False
+  elif total_mincome < monthly_income_cap*1.1:
+    eligible_mincome = False
+    marginal_mincome = True
+  else:
+    eligible_mincome = False
+    marginal_mincome = False
+---
+# Annual Income
+reconsider: True
+code: |
+  if total_yrincome <= annual_income_cap:
+    eligible_yrincome = True
+    marginal_yrincome = False
+  elif total_yrincome < annual_income_cap*1.1:
+    eligible_yrincome = False
+    marginal_yrincome = True
+  else: 
+    eligible_yrincome = False
+    marginal_yrincome = False
+---
+# Total Monthly Income
+reconsider: True
+code: |
+  total_mincome = 0
+  if user.mincome.exists:
+    total_mincome += user.mincome.value
+  for f in family:
+    if f.mincome.exists:
+      total_mincome += f.mincome.value
+---
+# Total Annual Income
+reconsider: True
+code: |
+  total_yrincome = 0
+  if user.yrincome.exists:
+    total_yrincome += user.yrincome.value
+  for f in family:
+    if f.yrincome.exists:
+      total_yrincome += f.yrincome.value
+---
+reconsider: True
+code: |
+  if family_size == 1:
+    monthly_income_cap = 1668
+    annual_income_cap = 20021
+  elif family_size == 2:
+    monthly_income_cap = 2066
+    annual_income_cap = 24788
+  elif family_size == 3:
+    monthly_income_cap = 2940
+    annual_income_cap = 35275
+  elif family_size == 4:
+    monthly_income_cap = 3178
+    annual_income_cap = 38134
+  elif family_size == 5:
+    monthly_income_cap = 3416
+    annual_income_cap = 40995
+  elif family_size >= 6:
+    monthly_income_cap = 3655
+    annual_income_cap = 43855
+---
+reconsider: True
+code: |
+  family_size = 1 + len(family)
 ---
