@@ -76,7 +76,7 @@ section: Welcome
 ---
 # Information --> MANDATORY screen #2
 question: |
-  This is how this process works:
+  This is how this process works
 subquestion: |
   
   ###Step-by-step process:
@@ -98,7 +98,7 @@ subquestion: |
   ###Privacy
   Your privacy is important. No information will be collected aside from what you choose to include in your complaint.
  
-  *Personal Information*: anything can be used to identify an individual.
+  *Personal Information*: anything that can be used to identify an individual.
  
   The collection of your personal information on this form is optional and only done with your consent.
  
@@ -129,7 +129,7 @@ section: Grounds
 ---
 # Grounds
 question: |
-  When did the incident happened?
+  When did the incident happen?
 fields:
   - Did the incident in question happen within the last year?: user.incident_within_last_year
     datatype: yesnoradio
@@ -169,7 +169,7 @@ section: Grounds
 ---
 # Grounds -->  Information screen - service is right for you
 question: |
-  Based on what you have said, you are likely qualified to file a police complaint.
+  Based on what you have said, you likely qualify to file a police complaint.
 subquestion: |
   The next section will ask you to describe the incident.
   Please be as detailed as possible.
@@ -181,7 +181,7 @@ question: Tell us what happened.
 subquestion: |
   Please explain to the best of your knowledge the incident in question, including relevent details about the police involvement (if any) and any police actions or omissions (if any).
 fields:
-  - What happened BEFORE the police were called or arrived?: before_police
+  - What happened BEFORE the police were called or before they arrived?: before_police
     input type: area
     rows: 10
   - Did police show up to the scene?: police_showed_up
@@ -203,7 +203,7 @@ fields:
   - What is it?: file_number_name
     datatype: integer
     show if: file_number
-  - Do you know the name(s) of police officer(s) that you are filing the complaint against?: names_police
+  - Do you know the name(s) of police officer(s) that you are filing the complaint against? Or are you able to provide their indentifiable discriptions?: names_police
     datatype: yesnoradio
     show if: police_showed_up
   - Name(s)(First and/or Last) AND/OR an Identifiable Discription?: names_police_list
@@ -218,6 +218,15 @@ subquestion: |
    This next section will ask a series of questions to figure out which breach of duty occured.
 continue button field: user_saw_grounds3_screen
 section: Grounds
+---
+# Acknowldgment of feelings
+question: |
+   Thank you for letting us know what happened. 
+subquestion: |
+   We are sorry to hear about what happened. Submitting a complaint can be a meaningful step towards resolution.
+continue button field: user_saw_acknowlegment
+section: Grounds
+
 ---
 # Grounds --> (h) neglect of duty question
 question: Neglect of Duty (check if applicable)
@@ -554,7 +563,7 @@ buttons:
 question: |
   Your letter is complete! Please **carefully** read the information below.
 subquestion: |
-   You can choose to send a copy of the formal complaint letter (see below) directly to the Calgary Police, Chief of Calgary Police, the Calgary Police Commission, and the Minister of Justice via the email function by clicking "continue".
+   You can choose to send a copy of the formal complaint letter (see below) directly to the Calgary Police, Chief of Calgary Police, the Calgary Police Commission, and the Minister of Justice via the email function by clicking "Email the letter".
    
    Additionally, you can email this letter to yourself by inputting your email address into the emailing tool.
    
@@ -886,9 +895,10 @@ attachment:
 progress: 100
 section: Next
 field: user_saw_the_letter
+continue button label: Email the letter
 ---
 code: |
-  if one_or_more_grounds_met and user_saw_grounds4_screen and user.select_if_anonymous:
+  if one_or_more_grounds_met and user_saw_acknowlegment and user_saw_grounds4_screen and user.select_if_anonymous:
     continue_screen = True
   else: 
     continue_screen = False
